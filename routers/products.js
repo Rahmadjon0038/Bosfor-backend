@@ -1,3 +1,5 @@
+// Fayl nomi: routers/products.js (TO'LIQ TUZATILGAN)
+
 /**
  * @swagger
  * tags:
@@ -11,14 +13,15 @@ const productControllers = require("../controllers/productscontrollers");
 const authMiddleware = require("../middleware/authmiddleware");
 
 //==============================
-// 1. POST products/add
+// 1. POST /products/add
 //==============================
 /**
  * @swagger
  * /products/add:
  *   post:
- *     summary: Yangi mahsulot yaratish (Admin talab qilinadi mumkin)
- *     tags: [Products]
+ *     summary: Yangi mahsulot yaratish (Admin talab qilinadi)
+ *     tags:
+ *       - Products
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -46,10 +49,13 @@ const authMiddleware = require("../middleware/authmiddleware");
  *                 type: array
  *                 items:
  *                   type: string
- *                 description: Rasm URL'lar massivi
+ *                 description: Rasm URL'lar ro'yxati
  *               isliked:
  *                 type: boolean
  *                 example: true
+ *               incart:
+ *                 type: boolean
+ *                 example: false
  *               category_id:
  *                 type: integer
  *                 description: Mahsulot bog'langan kategoriya IDsi
@@ -57,24 +63,25 @@ const authMiddleware = require("../middleware/authmiddleware");
  *       201:
  *         description: Mahsulot muvaffaqiyatli yaratildi
  *       400:
- *         description: Talab qilingan maydonlar to'ldirilmagan yoki noto'g'ri category_id
+ *         description: Noto'g'ri maydon yoki category_id xatosi
  *       401:
  *         description: Autentifikatsiya xatosi
  */
 router.post("/add", authMiddleware, productControllers.createProduct);
 
 //==============================
-// 2. GET products/all
+// 2. GET /products/all
 //==============================
 /**
  * @swagger
  * /products/all:
  *   get:
  *     summary: Barcha mahsulotlarni kategoriyasi bilan olish
- *     tags: [Products]
+ *     tags:
+ *       - Products
  *     responses:
  *       200:
- *         description: Mahsulotlar ro'yxati muvaffaqiyatli olindi
+ *         description: Mahsulotlar ro'yxati
  *         content:
  *           application/json:
  *             schema:
@@ -89,8 +96,8 @@ router.post("/add", authMiddleware, productControllers.createProduct);
  *                   images:
  *                     type: array
  *                     items: { type: string }
- *                     example: ["https://example.com/img1.jpg", "https://example.com/img2.jpg"]
  *                   isliked: { type: boolean, example: false }
+ *                   incart: { type: boolean, example: false }
  *                   category_id: { type: integer, example: 1 }
  *                   category_name: { type: string, example: "Kurtkalar va svitrlar" }
  *       500:
@@ -99,14 +106,15 @@ router.post("/add", authMiddleware, productControllers.createProduct);
 router.get("/all", productControllers.getAllProducts);
 
 //==============================
-// 3. GET products/{id}
+// 3. GET /products/{id}
 //==============================
 /**
  * @swagger
  * /products/{id}:
  *   get:
  *     summary: ID bo'yicha bitta mahsulotni olish
- *     tags: [Products]
+ *     tags:
+ *       - Products
  *     parameters:
  *       - in: path
  *         name: id
@@ -116,37 +124,22 @@ router.get("/all", productControllers.getAllProducts);
  *         description: Mahsulotning ID raqami
  *     responses:
  *       200:
- *         description: Mahsulot ma'lumotlari muvaffaqiyatli olindi
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 id: { type: integer, example: 15 }
- *                 name: { type: string, example: "Yozgi fudbolka" }
- *                 price: { type: integer, example: 125000 }
- *                 count: { type: integer, example: 60 }
- *                 images:
- *                   type: array
- *                   items: { type: string }
- *                   example: ["https://example.com/img1.jpg", "https://example.com/img2.jpg"]
- *                 isliked: { type: boolean, example: false }
- *                 category_id: { type: integer, example: 1 }
- *                 category_name: { type: string, example: "Kurtkalar va svitrlar" }
+ *         description: Mahsulot ma'lumotlari
  *       404:
  *         description: Mahsulot topilmadi
  */
 router.get("/:id", productControllers.getProductById);
 
 //==============================
-// 4. PUT products/{id}
+// 4. PUT /products/{id}
 //==============================
 /**
  * @swagger
  * /products/{id}:
  *   put:
- *     summary: ID bo'yicha mahsulotni yangilash (Admin talab qilinishi mumkin)
- *     tags: [Products]
+ *     summary: ID bo'yicha mahsulotni yangilash
+ *     tags:
+ *       - Products
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -155,7 +148,6 @@ router.get("/:id", productControllers.getProductById);
  *         required: true
  *         schema:
  *           type: integer
- *         description: Yangilanadigan mahsulotning ID raqami
  *     requestBody:
  *       required: true
  *       content:
@@ -165,10 +157,11 @@ router.get("/:id", productControllers.getProductById);
  *             properties:
  *               name: { type: string, example: "Yozgi Fudbolka V2" }
  *               price: { type: integer, example: 130000 }
- *               category_id: { type: integer, example: 2 }
+ *               incart: { type: boolean, example: true }
+ *               isliked: { type: boolean, example: true }
  *     responses:
  *       200:
- *         description: Mahsulot muvaffaqiyatli yangilandi
+ *         description: Mahsulot yangilandi
  *       401:
  *         description: Autentifikatsiya xatosi
  *       404:
@@ -177,14 +170,15 @@ router.get("/:id", productControllers.getProductById);
 router.put("/:id", authMiddleware, productControllers.updateProduct);
 
 //==============================
-// 5. DELETE products/{id}
+// 5. DELETE /products/{id}
 //==============================
 /**
  * @swagger
  * /products/{id}:
  *   delete:
- *     summary: ID bo'yicha mahsulotni o'chirish (Admin talab qilinishi mumkin)
- *     tags: [Products]
+ *     summary: ID bo'yicha mahsulotni o'chirish
+ *     tags:
+ *       - Products
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -193,21 +187,149 @@ router.put("/:id", authMiddleware, productControllers.updateProduct);
  *         required: true
  *         schema:
  *           type: integer
- *         description: O'chiriladigan mahsulotning ID raqami
  *     responses:
  *       200:
  *         description: Mahsulot muvaffaqiyatli o'chirildi
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message: { type: string, example: "Mahsulot muvaffaqiyatli o'chirildi." }
- *       401:
- *         description: Autentifikatsiya xatosi
  *       404:
  *         description: Mahsulot topilmadi
  */
 router.delete("/:id", authMiddleware, productControllers.deleteProduct);
+
+//==============================
+// 6. GET /products/category/{categoryId}
+//==============================
+/**
+ * @swagger
+ * /products/category/{categoryId}:
+ *   get:
+ *     summary: Category ID bo'yicha mahsulotlarni olish
+ *     tags:
+ *       - Products
+ *     parameters:
+ *       - in: path
+ *         name: categoryId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Filterlanadigan kategoriya IDsi
+ *     responses:
+ *       200:
+ *         description: Filterlangan mahsulotlar
+ *       400:
+ *         description: Noto'g'ri ID formati
+ */
+router.get("/category/:categoryId", productControllers.getProductsByCategoryId);
+
+//==============================
+// 7. GET /products/liked
+//==============================
+/**
+ * @swagger
+ * /products/liked:
+ *   get:
+ *     summary: Faqat isliked=true bo'lgan mahsulotlarni olish
+ *     tags:
+ *       - Products
+ *     responses:
+ *       200:
+ *         description: Yoqtirilgan mahsulotlar ro'yxati
+ *       500:
+ *         description: Server xatosi
+ */
+router.get("/liked", productControllers.getLikedProducts);
+
+//==============================
+// 8. PATCH /products/like/{id}
+//==============================
+/**
+ * @swagger
+ * /products/like/{id}:
+ *   patch:
+ *     summary: Mahsulotning 'isliked' holatini yangilash (Like/Unlike)
+ *     tags:
+ *       - Products
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - isliked
+ *             properties:
+ *               isliked:
+ *                 type: boolean
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Holat muvaffaqiyatli yangilandi
+ *       404:
+ *         description: Mahsulot topilmadi
+ */
+router.patch("/like/:id", authMiddleware, productControllers.toggleLikedStatus);
+
+//==============================
+// 9. PATCH /products/cart/{id}
+//==============================
+/**
+ * @swagger
+ * /products/cart/{id}:
+ *   patch:
+ *     summary: Mahsulotning 'incart' holatini yangilash (Savatga qo'shish/chiqarish)
+ *     tags:
+ *       - Products
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - incart
+ *             properties:
+ *               incart:
+ *                 type: boolean
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Holat muvaffaqiyatli yangilandi
+ *       404:
+ *         description: Mahsulot topilmadi
+ */
+router.patch("/cart/:id", authMiddleware, productControllers.toggleCartStatus);
+
+//==============================
+// 10. GET /products/cart
+//==============================
+/**
+ * @swagger
+ * /products/cart:
+ *   get:
+ *     summary: Faqat incart=true bo'lgan (savatdagi) mahsulotlarni olish
+ *     tags:
+ *       - Products
+ *     responses:
+ *       200:
+ *         description: Savatdagi mahsulotlar ro'yxati
+ *       500:
+ *         description: Server xatosi
+ */
+router.get("/cart", productControllers.getCartProducts);
 
 module.exports = router;

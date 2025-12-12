@@ -1,11 +1,8 @@
-// Fayl nomi: models/products.js
+// Fayl nomi: models/products.js (Tuzatilgan va to'liq)
 
-const db = require("../config/db"); // DB ulanishini chaqiramiz
+const db = require("../config/db");
 
 const ProductModel = {
-  /**
-   * products jadvalini yaratadi. category_id orqali categories jadvaliga bog'lanadi.
-   */
   initializeTable: (callback) => {
     try {
       db.exec(`
@@ -14,8 +11,9 @@ const ProductModel = {
                     name TEXT NOT NULL,
                     price INTEGER NOT NULL,
                     count INTEGER DEFAULT 0,
-                    images TEXT,  -- Rasm URL'lari JSON stringi sifatida saqlanadi
+                    images TEXT,  
                     isliked BOOLEAN DEFAULT 0,
+                    incart BOOLEAN DEFAULT 0,
                     category_id INTEGER NOT NULL, 
                     FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
                 );
@@ -28,16 +26,12 @@ const ProductModel = {
     }
   },
 
-  /**
-   * Yangi mahsulot qo'shish.
-   */
   create: (productData, callback) => {
     try {
-      // images Array bo'lgani uchun uni DBga yozishdan oldin JSON stringiga aylantiramiz
       const imagesJson = JSON.stringify(productData.images || []);
 
       const stmt = db.prepare(
-        "INSERT INTO products (name, price, count, images, isliked, category_id) VALUES (?, ?, ?, ?, ?, ?)"
+        "INSERT INTO products (name, price, count, images, isliked, incart, category_id) VALUES (?, ?, ?, ?, ?, ?, ?)"
       );
       const info = stmt.run(
         productData.name,
@@ -45,6 +39,7 @@ const ProductModel = {
         productData.count,
         imagesJson,
         productData.isliked ? 1 : 0,
+        productData.incart ? 1 : 0,
         productData.category_id
       );
       callback(null, info.lastInsertRowid);
@@ -53,9 +48,6 @@ const ProductModel = {
     }
   },
 
-  /**
-   * Barcha mahsulotlarni olish. Kategoriyani ham biriktirib qaytaradi.
-   */
   getAll: (callback) => {
     try {
       const stmt = db.prepare(`
@@ -65,10 +57,10 @@ const ProductModel = {
             `);
       const products = stmt.all();
 
-      // isliked ni boolean va images ni Array formatiga o'tkazamiz
       const formattedProducts = products.map((p) => ({
         ...p,
         isliked: !!p.isliked,
+        incart: !!p.incart,
         images: JSON.parse(p.images),
       }));
 
@@ -78,9 +70,6 @@ const ProductModel = {
     }
   },
 
-  /**
-   * ID bo'yicha bitta mahsulotni olish.
-   */
   getById: (id, callback) => {
     try {
       const stmt = db.prepare(`
@@ -92,8 +81,8 @@ const ProductModel = {
       const product = stmt.get(id);
 
       if (product) {
-        // isliked ni boolean va images ni Array formatiga o'tkazamiz
         product.isliked = !!product.isliked;
+        product.incart = !!product.incart;
         product.images = JSON.parse(product.images);
       }
 
@@ -105,13 +94,15 @@ const ProductModel = {
 
   /**
    * Mahsulotni ID bo'yicha yangilash.
+   * isliked va incart ni raqamga o'tkazishni to'g'rilaymiz.
    */
   update: (id, productData, callback) => {
     try {
-      // Imagesni yangilayotgan bo'lsak, uni JSON stringiga o'tkazamiz
       let imagesJson = productData.images
         ? JSON.stringify(productData.images)
         : undefined;
+
+      // isliked ni INT ga o'tkazish
       let islikedInt =
         productData.isliked !== undefined
           ? productData.isliked
@@ -119,7 +110,14 @@ const ProductModel = {
             : 0
           : undefined;
 
-      // Dynamic SQL Query yaratish
+      // incart ni INT ga o'tkazish
+      let incartInt =
+        productData.incart !== undefined
+          ? productData.incart
+            ? 1
+            : 0
+          : undefined;
+
       let queryParts = [];
       let params = [];
 
@@ -140,8 +138,14 @@ const ProductModel = {
         params.push(imagesJson);
       }
       if (islikedInt !== undefined) {
+        // ⬅️ Yangilanishni kiritish
         queryParts.push("isliked = ?");
         params.push(islikedInt);
+      }
+      if (incartInt !== undefined) {
+        // ⬅️ Yangilanishni kiritish
+        queryParts.push("incart = ?");
+        params.push(incartInt);
       }
       if (productData.category_id !== undefined) {
         queryParts.push("category_id = ?");
@@ -149,7 +153,7 @@ const ProductModel = {
       }
 
       if (queryParts.length === 0) {
-        return callback(null, 0); // Yangilash uchun ma'lumot yo'q
+        return callback(null, 0);
       }
 
       const query = `UPDATE products SET ${queryParts.join(", ")} WHERE id = ?`;
@@ -163,9 +167,6 @@ const ProductModel = {
     }
   },
 
-  /**
-   * Mahsulotni ID bo'yicha o'chirish.
-   */
   delete: (id, callback) => {
     try {
       const stmt = db.prepare("DELETE FROM products WHERE id = ?");
@@ -175,6 +176,79 @@ const ProductModel = {
       callback(err);
     }
   },
-};
 
+  findByCategoryId: (categoryId, callback) => {
+    try {
+      const stmt = db.prepare(`
+                SELECT p.*, c.name AS category_name 
+                FROM products p
+                JOIN categories c ON p.category_id = c.id
+                WHERE p.category_id = ?
+            `);
+      const products = stmt.all(categoryId);
+
+      const formattedProducts = products.map((p) => ({
+        ...p,
+        isliked: !!p.isliked,
+        incart: !!p.incart,
+        images: JSON.parse(p.images),
+      }));
+
+      callback(null, formattedProducts);
+    } catch (err) {
+      callback(err);
+    }
+  },
+
+  // Fayl nomi: models/product.js (NAMUNA)
+
+  // ...
+
+  // --- Faqat yoqtirilgan mahsulotlarni olish ---
+  getLikedProducts: (callback) => {
+    try {
+      const stmt = db.prepare(`
+            SELECT * FROM products // ⬅️ FAKAT PRODUCTS DAN OLYAPMIZ
+            WHERE isliked = 1 // isliked 1 ga teng bo'lgan mahsulotni qidiramiz
+        `);
+      const products = stmt.all();
+
+      // Kategoriya nomini olib tashlaganimiz uchun formatlashni o'zgartiramiz
+      const formattedProducts = products.map((p) => ({
+        ...p,
+        isliked: !!p.isliked,
+        incart: !!p.incart,
+        images: JSON.parse(p.images),
+        category_name: null, // Test uchun null qoldiramiz
+      }));
+
+      callback(null, formattedProducts);
+    } catch (err) {
+      callback(err);
+    }
+  },
+
+  // --- Faqat savatdagi mahsulotlarni olish ---
+  getCartProducts: (callback) => {
+    try {
+      const stmt = db.prepare(`
+            SELECT * FROM products // ⬅️ FAKAT PRODUCTS DAN OLYAPMIZ
+            WHERE incart = 1
+        `);
+      const products = stmt.all();
+
+      const formattedProducts = products.map((p) => ({
+        ...p,
+        isliked: !!p.isliked,
+        incart: !!p.incart,
+        images: JSON.parse(p.images),
+        category_name: null,
+      }));
+
+      callback(null, formattedProducts);
+    } catch (err) {
+      callback(err);
+    }
+  },
+};
 module.exports = ProductModel;
