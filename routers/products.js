@@ -106,7 +106,43 @@ router.post("/add", authMiddleware, productControllers.createProduct);
 router.get("/all", productControllers.getAllProducts);
 
 //==============================
-// 3. GET /products/{id}
+// 3. GET /products/liked
+//==============================
+/**
+ * @swagger
+ * /products/liked:
+ *   get:
+ *     summary: Faqat isliked=true bo'lgan mahsulotlarni olish
+ *     tags:
+ *       - Products
+ *     responses:
+ *       200:
+ *         description: Yoqtirilgan mahsulotlar ro'yxati
+ *       500:
+ *         description: Server xatosi
+ */
+router.get("/liked", productControllers.getLikedProducts);
+
+//==============================
+// 4. GET /products/cart
+//==============================
+/**
+ * @swagger
+ * /products/cart:
+ *   get:
+ *     summary: Faqat incart=true bo'lgan (savatdagi) mahsulotlarni olish
+ *     tags:
+ *       - Products
+ *     responses:
+ *       200:
+ *         description: Savatdagi mahsulotlar ro'yxati
+ *       500:
+ *         description: Server xatosi
+ */
+router.get("/cart", productControllers.getCartProducts);
+
+//==============================
+// 5. GET /products/{id}
 //==============================
 /**
  * @swagger
@@ -221,24 +257,6 @@ router.delete("/:id", authMiddleware, productControllers.deleteProduct);
 router.get("/category/:categoryId", productControllers.getProductsByCategoryId);
 
 //==============================
-// 7. GET /products/liked
-//==============================
-/**
- * @swagger
- * /products/liked:
- *   get:
- *     summary: Faqat isliked=true bo'lgan mahsulotlarni olish
- *     tags:
- *       - Products
- *     responses:
- *       200:
- *         description: Yoqtirilgan mahsulotlar ro'yxati
- *       500:
- *         description: Server xatosi
- */
-router.get("/liked", productControllers.getLikedProducts);
-
-//==============================
 // 8. PATCH /products/like/{id}
 //==============================
 /**
@@ -274,7 +292,7 @@ router.get("/liked", productControllers.getLikedProducts);
  *       404:
  *         description: Mahsulot topilmadi
  */
-router.patch("/like/:id", authMiddleware, productControllers.toggleLikedStatus);
+router.patch("/like/:id", productControllers.toggleLikedStatus);
 
 //==============================
 // 9. PATCH /products/cart/{id}
@@ -312,24 +330,6 @@ router.patch("/like/:id", authMiddleware, productControllers.toggleLikedStatus);
  *       404:
  *         description: Mahsulot topilmadi
  */
-router.patch("/cart/:id", authMiddleware, productControllers.toggleCartStatus);
-
-//==============================
-// 10. GET /products/cart
-//==============================
-/**
- * @swagger
- * /products/cart:
- *   get:
- *     summary: Faqat incart=true bo'lgan (savatdagi) mahsulotlarni olish
- *     tags:
- *       - Products
- *     responses:
- *       200:
- *         description: Savatdagi mahsulotlar ro'yxati
- *       500:
- *         description: Server xatosi
- */
-router.get("/cart", productControllers.getCartProducts);
+router.patch("/cart/:id", productControllers.toggleCartStatus);
 
 module.exports = router;

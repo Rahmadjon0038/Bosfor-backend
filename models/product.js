@@ -208,18 +208,18 @@ const ProductModel = {
   getLikedProducts: (callback) => {
     try {
       const stmt = db.prepare(`
-            SELECT * FROM products // ⬅️ FAKAT PRODUCTS DAN OLYAPMIZ
-            WHERE isliked = 1 // isliked 1 ga teng bo'lgan mahsulotni qidiramiz
+            SELECT p.*, c.name AS category_name 
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            WHERE p.isliked = 1
         `);
       const products = stmt.all();
 
-      // Kategoriya nomini olib tashlaganimiz uchun formatlashni o'zgartiramiz
       const formattedProducts = products.map((p) => ({
         ...p,
         isliked: !!p.isliked,
         incart: !!p.incart,
         images: JSON.parse(p.images),
-        category_name: null, // Test uchun null qoldiramiz
       }));
 
       callback(null, formattedProducts);
@@ -232,8 +232,10 @@ const ProductModel = {
   getCartProducts: (callback) => {
     try {
       const stmt = db.prepare(`
-            SELECT * FROM products // ⬅️ FAKAT PRODUCTS DAN OLYAPMIZ
-            WHERE incart = 1
+            SELECT p.*, c.name AS category_name 
+            FROM products p
+            JOIN categories c ON p.category_id = c.id
+            WHERE p.incart = 1
         `);
       const products = stmt.all();
 
@@ -242,7 +244,6 @@ const ProductModel = {
         isliked: !!p.isliked,
         incart: !!p.incart,
         images: JSON.parse(p.images),
-        category_name: null,
       }));
 
       callback(null, formattedProducts);
